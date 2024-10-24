@@ -70,7 +70,7 @@ class ValidateCPUTime:
         )
 
     def _retrieve_node_cpu_time(self, start: datetime, end: datetime) -> QueryRange:
-        query = f'sum(rate(node_cpu_seconds_total{{cpu="{self.isolated_cpu}"}}[{self.rate_interval}])) * 1000'
+        query = f'sum(rate(node_cpu_seconds_total{{cpu="{self.isolated_cpu}", mode!~"idle|system"}}[{self.rate_interval}])) * 1000'
         print(query)
         return self.prom.get_metric_range(
             query=query,
