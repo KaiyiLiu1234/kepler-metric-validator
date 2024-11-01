@@ -4,8 +4,8 @@ from util import ErrorResult, GraphedResult
 # everything here should be in cli
 if __name__ == "__main__":
     v = ValidateCPUTime(
-        stresser_timeout=60,
-        stress_load=100
+        stresser_timeout=240,
+        stress_load=5
     )
     result = v.validate()
     
