@@ -1,10 +1,15 @@
 from prometheus_api_client import PrometheusConnect
 from datetime import datetime
-from util import QueryRange, DataPoint
+from validation import QueryRange, DataPoint
+from typing import NamedTuple
+
+class PromConfig(NamedTuple):
+    url: str
+    disable_ssl: bool
+
 class PromConnect:
-    
-    def __init__(self, url) -> None:
-        self.prom = PrometheusConnect(url=url, disable_ssl=True)
+    def __init__(self, pc: PromConfig) -> None:
+        self.prom = PrometheusConnect(url=pc.url, disable_ssl=pc.disable_ssl)
 
     def get_metric_range(self, query: str, start: datetime, end: datetime) -> QueryRange:
         series = self.prom.custom_query_range(

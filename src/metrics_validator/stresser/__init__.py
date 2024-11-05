@@ -5,7 +5,7 @@ from typing import NamedTuple, Set, List
 from util import return_child_pids
 
 class StressProcessConfig(NamedTuple):
-    isolated_cpus: List[int]
+    isolated_cpus: List[str]
     stress_load: int
     stresser_timeout: int
 
