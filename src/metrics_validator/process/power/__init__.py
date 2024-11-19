@@ -1,6 +1,6 @@
 from prometheus import PromConnect
 from stresser import StressProcess
-from validation import Validator, ValidationConfig, ValidationResult, QueryRange, DataPoint, common_timestamps, keep_timestamps
+from validation import Validator, ValidationConfig, ValidationResult, ValidationQuery, QueryRange, DataPoint, common_timestamps, keep_timestamps
 from datetime import datetime
 from typing import Iterable
 import subprocess
@@ -26,8 +26,12 @@ class NodeExporter(Validator):
             common_timestamp_set = common_timestamps(cpu_time_ratio, power_ratio)
             cpu_time_ratio = keep_timestamps(common_timestamp_set, cpu_time_ratio)
             power_ratio = keep_timestamps(common_timestamp_set, power_ratio)
+            new_vq = ValidationQuery(
+                actual_query_name=power_ratio.query,
+                predicted_query_name=cpu_time_ratio.query
+            )
             return ValidationResult(
-                vq=self.validation_query,
+                vq=new_vq,
                 predicted=[datapoint.value for datapoint in cpu_time_ratio.values],
                 actual=[datapoint.value for datapoint in power_ratio.values]
             )
