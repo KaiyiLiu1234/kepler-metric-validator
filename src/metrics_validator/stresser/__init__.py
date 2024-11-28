@@ -160,34 +160,57 @@ class StressContainer:
         return self._stress_command
 
     def generate_new_stress_command(self):
-        self._stress_command = f"bash -c 'dnf update && dnf install -y stress-ng && bash /app/stress_script.sh'"
+        # store these in a field
+        #load = "0:5,50:20,75:20,100:20,75:20,50:20,0:10"
+        load="100:20"
+        mount_dir = "/tmp"
+        self._stress_command = f"bash -c 'dnf update -y && dnf install -y stress-ng && bash /app/stress_script.sh -l \"{load}\" -d \"{mount_dir}\" '"
         
 
-    async def stress(self) -> StressContainerOutput:
+    def stress(self) -> StressContainerOutput:
         image = "fedora:latest"
         try:
             self.client.images.pull(image)
-            start_time = datetime.now()
             stress_container = self.client.containers.run(
                 image=image,
                 name=self.container_name,
                 command=self.stress_command,
-                volumes={self.stress_script: {'bind': '/app/stress_script.sh', 'mode': 'ro'}},
+                volumes={
+                    self.stress_script: {'bind': '/app/stress_script.sh', 'mode': 'ro'},
+                    '/tmp' :{'bind': '/tmp', 'mode': 'rw'}
+                },
                 remove=False,
                 detach=True
 
             )
             id = stress_container.id
             print(f"Container ID: {id}")
-            while True:
-                stress_container.reload()
-                if stress_container.status == "exited":
-                    break
-                await asyncio.sleep(1)
-            end_time = datetime.now()
-
+            status_map = stress_container.wait()
             print(stress_container.logs().decode("utf-8"))
             stress_container.remove()
+            print(status_map)
+            if status_map["StatusCode"] != 0:
+                raise Exception("stress script had an exit code of 0")
+
+            # based on mount dir retrieve start and end times
+            start_time = ""
+            end_time = ""
+            with open(file="/tmp/time_interval.log", mode="r") as f:
+                # in python, there is a more efficient way to do this by combining 'in' and 'startswith'
+                # to acquire lines with Stress Start Time and Stress End Time
+                for line in f.readlines():
+                    if line.startswith("Stress Start Time:"):
+                        start_timestamp = (line.split(":")[-1]).strip()
+                        start_time = datetime.fromtimestamp(float(start_timestamp))
+                    if line.startswith("Stress End Time:"):
+                        end_timestamp = (line.split(":")[-1]).strip()
+                        end_time = datetime.fromtimestamp(float(end_timestamp))
+
+            if not start_time or not end_time:
+                raise Exception("start time or end time is empty")
+
+            print(start_time)
+            print(end_time)
             return StressContainerOutput(
                 start_time=start_time,
                 end_time=end_time,

@@ -12,9 +12,9 @@ class ContainerValidator(Validator):
         self.isolated_cpus = ["15"]
         self.stress_container = StressContainer(sc)
 
-    async def validate(self) -> ValidationResult:
+    def validate(self) -> ValidationResult:
         try: 
-            stress_output = await self.stress_container.stress()
+            stress_output = self.stress_container.stress()
             kepler_process_cpu_time = self._retrieve_kepler_container_cpu_time(stress_output.start_time, stress_output.end_time, stress_output.container_id)
             node_exporter_cpu_time = self._retrieve_node_cpu_time(stress_output.start_time, stress_output.end_time)
 
@@ -44,6 +44,8 @@ class ContainerValidator(Validator):
     def _retrieve_kepler_container_cpu_time(self, start: datetime, end: datetime, container_id: str) -> QueryRange:
         query = f'sum(rate(kepler_container_bpf_cpu_time_ms_total{{container_id="{container_id}"}}[{self.rate_interval}]))'
         print(query)
+        print(start)
+        print(end)
         return self.prom.get_metric_range(
             query=query,
             start=start,
