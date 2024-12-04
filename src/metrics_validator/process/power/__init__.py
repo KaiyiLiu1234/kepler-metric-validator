@@ -36,7 +36,6 @@ class NodeExporter(Validator):
             expected_rapl_power = []
             for ratio, node_power in zip(cpu_time_ratio.values, node_rapl_power.values):
                 timestamp = ratio.timestamp
-                print(timestamp, node_power.timestamp)
                 process_power = ratio.value * node_power.value
                 expected_rapl_power.append(DataPoint(
                     timestamp=timestamp,
@@ -99,7 +98,11 @@ class NodeExporter(Validator):
             start=start,
             end=end
         )
-        print(test.values)
+        print("OUR TEST VALS")
+        
+        for val in test.values:
+            print(val.timestamp, val.value)
+        print("-----------------")
         common_timestamps_set = common_timestamps(target_cpu_time, total_cpu_time)
         target_cpu_time = keep_timestamps(common_timestamps_set, target_cpu_time)
         total_cpu_time = keep_timestamps(common_timestamps_set, total_cpu_time)
@@ -109,6 +112,10 @@ class NodeExporter(Validator):
             query=f"{target_cpu_time.query} / {total_cpu_time.query}",
             values = ratio_datapoints
         )
+        print("OUR ACTUAL VALS")
+        for val in ratio.values:
+            print(val.timestamp, val.value)
+        print("------------------------")
         return ratio
 
     # def _retrieve_target_power_ratio(self, start: datetime, end: datetime, target_pids: Iterable[int]) -> QueryRange:
