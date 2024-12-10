@@ -41,6 +41,19 @@ class NodeExporter(Validator):
                     timestamp=timestamp,
                     value = process_power
                 ))
+            print("TOTAL POWER RATIO")
+            pid_label = "|".join(map(str, stress_output.relevant_pids))
+            target_query = f'sum(rate(kepler_process_bpf_cpu_time_ms_total{{pid=~"{pid_label}"}}[{self.rate_interval}]))'
+            total_query = f'sum(rate(kepler_process_bpf_cpu_time_ms_total[{self.rate_interval}]))'
+            node_rapl_query = f'sum(rate(node_rapl_package_joules_total{{path="{"/host/sys/class/powercap/intel-rapl:0"}"}}[{self.rate_interval}]))'
+            test2 = self.prom.get_metric_range(
+                query=f"({target_query} / {total_query}) * {node_rapl_query}",
+                start=stress_output.script_result.start_time,
+                end=stress_output.script_result.end_time
+            )
+            for val1, val2 in zip(expected_rapl_power, test2.values):
+                print(val1.timestamp == val2.timestamp, val1.value == val2.value)
+            print("--------------------------------")
             process_power_qr = QueryRange("expected package power process", expected_rapl_power)
             new_vq = ValidationQuery(
                 actual_query_name=process_power_qr.query,
@@ -103,6 +116,18 @@ class NodeExporter(Validator):
         for val in test.values:
             print(val.timestamp, val.value)
         print("-----------------")
+
+        # print("TOTAL POWER RATIO")
+        # node_rapl_query = f'sum(rate(node_rapl_package_joules_total{{path="{"/host/sys/class/powercap/intel-rapl:0"}"}}[{self.rate_interval}]))'
+        # test2 = self.prom.get_metric_range(
+        #     query=f"({target_query} / {total_query}) * {node_rapl_query}",
+        #     start=start,
+        #     end=end
+        # )
+        # for val1, val2 in zip(test.values, test2.values):
+        #     print(val1.timestamp == val2.timestamp, val1.value == val2.value)
+        # print("--------------------------------")
+
         common_timestamps_set = common_timestamps(target_cpu_time, total_cpu_time)
         target_cpu_time = keep_timestamps(common_timestamps_set, target_cpu_time)
         total_cpu_time = keep_timestamps(common_timestamps_set, total_cpu_time)
@@ -116,6 +141,7 @@ class NodeExporter(Validator):
         for val in ratio.values:
             print(val.timestamp, val.value)
         print("------------------------")
+
         return ratio
 
     # def _retrieve_target_power_ratio(self, start: datetime, end: datetime, target_pids: Iterable[int]) -> QueryRange:
